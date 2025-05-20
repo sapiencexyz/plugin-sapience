@@ -15,6 +15,23 @@ export const DEFAULT_MCP_TIMEOUT_SECONDS = 60000;
 export const MIN_MCP_TIMEOUT_SECONDS = 1;
 export const DEFAULT_MAX_RETRIES = 2;
 
+export interface PingConfig{
+enabled: boolean; 
+intervalMs: number; 
+timeoutMs: number;
+failuresBeforeDisconnect: number;
+}
+
+export interface ConnectionState {
+status: 'connecting' | 'connected' | 'disconnected' | 'failed'; 
+pingInterval?: NodeJS. Timeout; 
+reconnectTimeout?: NodeJS. Timeout; 
+reconnectAttempts: number; 
+lastConnected?: Date; 
+lastError?: Error;
+consecutivePingFailures: number;
+}
+
 export type StdioMcpServerConfig = {
   type: "stdio";
   command?: string;
