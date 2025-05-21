@@ -1,5 +1,5 @@
 {
-  "name": "@fleek-platform/eliza-plugin-mcp",
+  "name": "@elizaos-plugin/plugin-mcp",
   "description": "ElizaOS plugin to integrate with MCP (Model Context Protocol) servers",
   "module": "dist/index.js",
   "main": "dist/index.js",
