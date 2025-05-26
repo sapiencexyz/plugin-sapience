@@ -21,25 +21,25 @@ Install the plugin in your ElizaOS project:
 - **npm**
 
 ```bash
-npm install @elizaos-plugin/plugin-mcp
+npm install @elizaos/plugin-mcp
 ```
 
 - **pnpm**
 
 ```bash
-pnpm install @elizaos-plugin/plugin-mcp
+pnpm install @elizaos/plugin-mcp
 ```
 
 - **yarn**
 
 ```bash
-yarn add @elizaos-plugin/plugin-mcp
+yarn add @elizaos/plugin-mcp
 ```
 
 - **bun**
 
 ```bash
-bun add @elizaos-plugin/plugin-mcp
+bun add @elizaos/plugin-mcp
 ```
 
 ## 🚀 Usage
@@ -49,7 +49,7 @@ bun add @elizaos-plugin/plugin-mcp
 ```json
 {
   "name": "Your Character",
-  "plugins": ["@elizaos-plugin/plugin-mcp"],
+  "plugins": ["@elizaos/plugin-mcp"],
   "settings": {
     "mcp": {
       "servers": {
