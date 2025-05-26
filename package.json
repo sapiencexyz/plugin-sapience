@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fleek-platform/eliza-plugin-mcp.git"
+    "url": "git+https://github.com/elizaos-plugins/plugin-mcp.git"
   },
   "tags": [
     "mcp",
