@@ -17,7 +17,7 @@ import {
   type McpServer,
   type McpServerConfig,
   type McpSettings,
-  type SseMcpServerConfig,
+  type HttpMcpServerConfig,
   type StdioMcpServerConfig,
   DEFAULT_PING_CONFIG,
   MAX_RECONNECT_ATTEMPTS,
@@ -140,7 +140,7 @@ export class McpService extends Service {
       const transport: StdioClientTransport | SSEClientTransport =
         config.type === "stdio"
           ? await this.buildStdioClientTransport(name, config)
-          : await this.buildSseClientTransport(name, config);
+          : await this.buildHttpClientTransport(name, config);
       const connection: McpConnection = {
         server: {
           name,
@@ -294,9 +294,14 @@ export class McpService extends Service {
     });
   }
 
-  private async buildSseClientTransport(name: string, config: SseMcpServerConfig) {
+  private async buildHttpClientTransport(name: string, config: HttpMcpServerConfig) {
     if (!config.url) {
-      throw new Error(`Missing URL for SSE MCP server ${name}`);
+      throw new Error(`Missing URL for HTTP MCP server ${name}`);
+    }
+
+    // Add deprecation warning for legacy "sse" type
+    if (config.type === "sse") {
+      logger.warn(`Server "${name}": "sse" transport type is deprecated. Use "streamable-http" or "http" instead for the modern Streamable HTTP transport.`);
     }
 
     return new SSEClientTransport(new URL(config.url));
