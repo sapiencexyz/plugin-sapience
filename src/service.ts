@@ -27,6 +27,7 @@ import {
   type PingConfig,
 } from "./types";
 import { buildMcpProviderData } from "./utils/mcp";
+import { createMcpToolCompatibilitySync as createMcpToolCompatibility, type McpToolCompatibility } from "./tool-compatibility";
 
 export class McpService extends Service {
   static serviceType: string = MCP_SERVICE_NAME;
@@ -40,6 +41,8 @@ export class McpService extends Service {
     text: "",
   };
   private pingConfig: PingConfig = DEFAULT_PING_CONFIG;
+  private toolCompatibility: McpToolCompatibility | null = null;
+  private compatibilityInitialized: boolean = false;
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
@@ -321,9 +324,29 @@ export class McpService extends Service {
 
       const response = await connection.client.listTools();
 
-      const tools = (response?.tools || []).map((tool) => ({
-        ...tool,
-      }));
+      const tools = (response?.tools || []).map((tool) => {
+        // Apply tool compatibility transformation to the tool's input schema
+        let processedTool = { ...tool };
+        
+        if (tool.inputSchema) {
+          try {
+            // Initialize compatibility if not already done
+            if (!this.compatibilityInitialized) {
+              this.initializeToolCompatibility();
+            }
+            
+            // Apply compatibility transformations automatically
+            processedTool.inputSchema = this.applyToolCompatibility(tool.inputSchema);
+            
+            logger.debug(`Applied tool compatibility for: ${tool.name} on server: ${serverName}`);
+          } catch (error) {
+            logger.warn(`Tool compatibility failed for ${tool.name} on ${serverName}:`, error);
+            // Keep original schema if transformation fails
+          }
+        }
+        
+        return processedTool;
+      });
 
       logger.info(`Fetched ${tools.length} tools for ${serverName}`);
       for (const tool of tools) {
@@ -448,6 +471,36 @@ export class McpService extends Service {
         );
         throw new Error(`Failed to connect to ${serverName} MCP server`);
       }
+    }
+  }
+
+  private initializeToolCompatibility(): void {
+    if (this.compatibilityInitialized) return;
+    
+    this.toolCompatibility = createMcpToolCompatibility(this.runtime);
+    this.compatibilityInitialized = true;
+    
+    if (this.toolCompatibility) {
+      logger.info(`Tool compatibility enabled`);
+    } else {
+      logger.info(`No tool compatibility needed`);
+    }
+  }
+
+  public applyToolCompatibility(toolSchema: any): any {
+    if (!this.compatibilityInitialized) {
+      this.initializeToolCompatibility();
+    }
+
+    if (!this.toolCompatibility || !toolSchema) {
+      return toolSchema;
+    }
+
+    try {
+      return this.toolCompatibility.transformToolSchema(toolSchema);
+    } catch (error) {
+      logger.warn(`Tool compatibility transformation failed:`, error);
+      return toolSchema; // Fall back to original schema
     }
   }
 }
