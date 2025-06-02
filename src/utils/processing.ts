@@ -1,5 +1,6 @@
 import {
   type Content,
+  type ContentType,
   type HandlerCallback,
   type IAgentRuntime,
   type Media,
@@ -73,7 +74,7 @@ export function processToolResult(
     } else if (content.type === "image") {
       hasAttachments = true;
       attachments.push({
-        contentType: content.mimeType,
+        contentType: content.mimeType as ContentType,
         url: `data:${content.mimeType};base64,${content.data}`,
         id: createUniqueUuid(runtime, messageEntityId),
         title: "Generated image",

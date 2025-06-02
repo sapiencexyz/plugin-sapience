@@ -12,7 +12,6 @@ import type { McpService } from "../service";
 import { resourceSelectionTemplate } from "../templates/resourceSelectionTemplate";
 import { MCP_SERVICE_NAME } from "../types";
 import { handleMcpError } from "../utils/error";
-import { withModelRetry } from "../utils/mcp";
 import {
   handleResourceAnalysis,
   processResourceResult,
@@ -23,6 +22,7 @@ import {
   validateResourceSelection,
 } from "../utils/validation";
 import type { ResourceSelection } from "../utils/validation";
+import { withModelRetry } from "../utils/wrapper";
 
 function createResourceSelectionPrompt(composedState: State, userMessage: string): string {
   const mcpData = composedState.values.mcp || {};
@@ -114,17 +114,23 @@ export const readResourceAction: Action = {
         prompt: resourceSelectionPrompt,
       });
 
-      const parsedSelection = await withModelRetry<ResourceSelection>(
-        resourceSelection,
+      const parsedSelection = await withModelRetry<ResourceSelection>({
         runtime,
-        (data) => validateResourceSelection(data),
+        state: composedState,
         message,
-        composedState,
-        (originalResponse, errorMessage, state, userMessage) =>
-          createResourceSelectionFeedbackPrompt(originalResponse, errorMessage, state, userMessage),
         callback,
-        "I'm having trouble figuring out where to find the information you're looking for. Could you provide more details about what you need?"
-      );
+        input: resourceSelection,
+        validationFn: (data) => validateResourceSelection(data),
+        createFeedbackPromptFn: (originalResponse, errorMessage, state, userMessage) =>
+          createResourceSelectionFeedbackPrompt(
+            originalResponse as string,
+            errorMessage,
+            state,
+            userMessage
+          ),
+        failureMsg: `I'm having trouble finding the resource you're looking for. Could you provide more details about what you need?`,
+        retryCount: 0,
+      });
 
       if (!parsedSelection || parsedSelection.noResourceAvailable) {
         if (callback && parsedSelection?.noResourceAvailable) {
