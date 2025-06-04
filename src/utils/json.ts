@@ -2,7 +2,18 @@ import Ajv from "ajv";
 import JSON5 from "json5";
 
 export function parseJSON<T>(input: string): T {
-  const cleanedInput = input.replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+  // Remove code blocks
+  let cleanedInput = input.replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+  
+  // Find JSON object boundaries - look for first { and last }
+  const firstBrace = cleanedInput.indexOf('{');
+  const lastBrace = cleanedInput.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    // Extract only the JSON part between { and }
+    cleanedInput = cleanedInput.substring(firstBrace, lastBrace + 1);
+  }
+  
   return JSON5.parse(cleanedInput);
 }
 
@@ -20,7 +31,7 @@ export function validateJsonSchema<T = unknown>(
     const valid = validate(data);
 
     if (!valid) {
-      const errors = (validate.errors || []).map((err) => {
+      const errors = (validate.errors || []).map((err: any) => {
         const path = err.instancePath ? `${err.instancePath.replace(/^\//, "")}` : "value";
         return `${path}: ${err.message}`;
       });
