@@ -25,6 +25,8 @@ CRITICAL INSTRUCTIONS:
 
 !!! YOUR RESPONSE MUST BE A VALID JSON OBJECT ONLY !!! 
 
+CRITICAL: Your response must START with { and END with }. DO NOT include ANY text before or after the JSON.
+
 STRICT FORMAT REQUIREMENTS:
 - NO code block formatting (NO backticks or \`\`\`)
 - NO comments (NO // or /* */)
@@ -32,7 +34,10 @@ STRICT FORMAT REQUIREMENTS:
 - Every parameter value must be a concrete, usable value (not instructions to replace)
 - Use proper JSON syntax with double quotes for strings
 - Use proper types: strings in quotes, numbers without quotes, booleans as true/false
-- NO explanatory text before or after the JSON object
+- ABSOLUTELY NO explanatory text before or after the JSON object
+- DO NOT start with phrases like "I will use", "Launching", "Let me search", etc.
+- DO NOT end with explanatory text like "I will now analyze", "Please wait", etc.
+- Your entire response should be parseable as JSON
 
 EXAMPLE FOR GITHUB FILE REQUEST:
 {
