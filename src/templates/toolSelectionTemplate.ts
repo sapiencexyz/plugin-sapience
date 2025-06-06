@@ -22,6 +22,8 @@ You must select the most appropriate tool from the list above to fulfill the use
 
 !!! YOUR RESPONSE MUST BE A VALID JSON OBJECT ONLY !!! 
 
+CRITICAL: Your response must START with { and END with }. DO NOT include ANY text before or after the JSON.
+
 ## STRICT FORMAT REQUIREMENTS
 - The response MUST be a single valid JSON object.
 - DO NOT wrap the JSON in triple backticks (\`\`\`), code blocks, or include any explanatory text.

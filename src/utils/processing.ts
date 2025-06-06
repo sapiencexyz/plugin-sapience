@@ -6,6 +6,7 @@ import {
   type Media,
   type Memory,
   ModelType,
+  ContentType,
   createUniqueUuid,
   logger,
 } from "@elizaos/core";
@@ -13,6 +14,17 @@ import { type State, composePromptFromState } from "@elizaos/core";
 import { resourceAnalysisTemplate } from "../templates/resourceAnalysisTemplate";
 import { toolReasoningTemplate } from "../templates/toolReasoningTemplate";
 import { createMcpMemory } from "./mcp";
+
+function getMimeTypeToContentType(mimeType?: string): ContentType | undefined {
+  if (!mimeType) return undefined;
+  
+  if (mimeType.startsWith('image/')) return ContentType.IMAGE;
+  if (mimeType.startsWith('video/')) return ContentType.VIDEO;
+  if (mimeType.startsWith('audio/')) return ContentType.AUDIO;
+  if (mimeType.includes('pdf') || mimeType.includes('document')) return ContentType.DOCUMENT;
+  
+  return undefined;
+}
 
 export function processResourceResult(
   result: {
@@ -74,7 +86,7 @@ export function processToolResult(
     } else if (content.type === "image") {
       hasAttachments = true;
       attachments.push({
-        contentType: content.mimeType as ContentType,
+        contentType: getMimeTypeToContentType(content.mimeType),
         url: `data:${content.mimeType};base64,${content.data}`,
         id: createUniqueUuid(runtime, messageEntityId),
         title: "Generated image",
@@ -173,7 +185,7 @@ export async function handleToolResponse(
       text: reasonedResponse,
       thought: `I analyzed the output from the ${toolName} tool on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
       actions: ["CALL_MCP_TOOL"],
-      attachments: hasAttachments ? attachments : undefined,
+      attachments: hasAttachments && attachments.length > 0 ? attachments : undefined,
     });
   }
 }
