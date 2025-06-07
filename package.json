@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -49,6 +49,27 @@
   },
   "agentConfig": {
     "pluginType": "elizaos:plugin:1.0.0",
-    "pluginParameters": {}
+    "pluginParameters": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": {
+        "type": "string",
+        "description": "Personal access token used by the GitHub MCP server for authentication to GitHub APIs.",
+        "required": true
+      },
+      "GOOGLE_MAPS_API_KEY": {
+        "type": "string",
+        "description": "API key used by the Google Maps MCP server to access Google Maps services.",
+        "required": true
+      },
+      "PATH": {
+        "type": "string",
+        "description": "System PATH variable forwarded to MCP child processes when using stdio transport.",
+        "required": false
+      },
+      "mcp": {
+        "type": "string",
+        "description": "JSON string or configuration object that defines MCP server settings (e.g., server list and connection details).",
+        "required": false
+      }
+    }
   }
 }
