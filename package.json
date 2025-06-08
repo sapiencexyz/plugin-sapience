@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -52,13 +52,13 @@
     "pluginParameters": {
       "PATH": {
         "type": "string",
-        "description": "System PATH passed to child processes when establishing a stdio transport to an MCP server",
+        "description": "System PATH inherited from the host environment and forwarded to child processes when launching an MCP server through stdio transport.",
         "required": false,
         "sensitive": false
       },
       "mcp": {
         "type": "string",
-        "description": "JSON or structured configuration defining MCP settings and server definitions for the agent",
+        "description": "Serialized (e.g., JSON) configuration that defines MCP settings and server definitions; read at runtime to establish MCP server connections.",
         "required": false,
         "sensitive": false
       }
