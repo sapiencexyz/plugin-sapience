@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -49,6 +49,19 @@
   },
   "agentConfig": {
     "pluginType": "elizaos:plugin:1.0.0",
-    "pluginParameters": {}
+    "pluginParameters": {
+      "PATH": {
+        "type": "string",
+        "description": "System PATH passed to child processes when establishing a stdio transport to an MCP server",
+        "required": false,
+        "sensitive": false
+      },
+      "mcp": {
+        "type": "string",
+        "description": "JSON or structured configuration defining MCP settings and server definitions for the agent",
+        "required": false,
+        "sensitive": false
+      }
+    }
   }
 }
