@@ -1,5 +1,6 @@
 import {
   type Content,
+  type ContentType,
   type HandlerCallback,
   type IAgentRuntime,
   type Media,

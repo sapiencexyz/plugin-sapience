@@ -1,6 +1,17 @@
 import type { State } from "@elizaos/core";
-import { type McpProviderData, ResourceSelectionSchema, ToolSelectionSchema } from "../types";
+import {
+  type McpProviderData,
+  type McpServer,
+  ResourceSelectionSchema,
+  type ValidationResult,
+} from "../types";
 import { validateJsonSchema } from "./json";
+import {
+  toolSelectionArgumentSchema,
+  toolSelectionNameSchema,
+  type ToolSelectionArgument,
+  type ToolSelectionName,
+} from "./schemas";
 
 export interface ToolSelection {
   serverName: string;
@@ -17,51 +28,64 @@ export interface ResourceSelection {
   noResourceAvailable?: boolean;
 }
 
-export function validateToolSelection(
-  selection: unknown,
-  composedState: State
-): { success: true; data: ToolSelection } | { success: false; error: string } {
-  const basicResult = validateJsonSchema<ToolSelection>(selection, ToolSelectionSchema);
-  if (!basicResult.success) {
+export function validateToolSelectionName(
+  parsed: unknown,
+  state: State
+): ValidationResult<ToolSelectionName> {
+  const basicResult = validateJsonSchema<ToolSelectionName>(parsed, toolSelectionNameSchema);
+  if (basicResult.success === false) {
     return { success: false, error: basicResult.error };
   }
 
   const data = basicResult.data;
 
-  if (data.noToolAvailable) {
-    return { success: true, data };
-  }
+  const mcpData = state.values.mcp || {};
 
-  const mcpData = composedState.values.mcp || {};
-  const serverInfo = mcpData[data.serverName];
-
-  if (!serverInfo || serverInfo.status !== "connected") {
+  const server: McpServer | null = mcpData[data.serverName];
+  if (!server || server.status !== "connected") {
     return {
       success: false,
-      error: `Server '${data.serverName}' not found or not connected`,
+      error: `Server "${data.serverName}" not found or not connected`,
     };
   }
 
-  const toolInfo = serverInfo.tools?.[data.toolName];
+  const toolInfo = server.tools?.[data.toolName as keyof McpServer["tools"]];
   if (!toolInfo) {
     return {
       success: false,
-      error: `Tool '${data.toolName}' not found on server '${data.serverName}'`,
+      error: `Tool "${data.toolName}" not found on server "${data.serverName}"`,
     };
   }
 
-  if (toolInfo.inputSchema) {
-    const validationResult = validateJsonSchema(
-      data.arguments,
-      toolInfo.inputSchema as Record<string, unknown>
-    );
+  return { success: true, data };
+}
 
-    if (!validationResult.success) {
-      return {
-        success: false,
-        error: `Invalid arguments: ${validationResult.error}`,
-      };
-    }
+/**
+ * Validates the tool selection argument object.
+ * @param parsed - The tool selection object to validate
+ * @param toolInputSchema - The input schema for the tool
+ * @returns An object indicating success or failure of validation
+ */
+export function validateToolSelectionArgument(
+  parsed: unknown,
+  toolInputSchema: Record<string, unknown>
+): ValidationResult<ToolSelectionArgument> {
+  const basicResult = validateJsonSchema<ToolSelectionArgument>(
+    parsed,
+    toolSelectionArgumentSchema
+  );
+  if (basicResult.success === false) {
+    return { success: false, error: basicResult.error };
+  }
+
+  const data = basicResult.data;
+  const validationResult = validateJsonSchema(data.toolArguments, toolInputSchema);
+
+  if (validationResult.success === false) {
+    return {
+      success: false,
+      error: `Invalid arguments: ${validationResult.error}`,
+    };
   }
 
   return { success: true, data };

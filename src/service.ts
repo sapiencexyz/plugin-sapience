@@ -27,7 +27,10 @@ import {
   type PingConfig,
 } from "./types";
 import { buildMcpProviderData } from "./utils/mcp";
-import { createMcpToolCompatibilitySync as createMcpToolCompatibility, type McpToolCompatibility } from "./tool-compatibility";
+import {
+  createMcpToolCompatibilitySync as createMcpToolCompatibility,
+  type McpToolCompatibility,
+} from "./tool-compatibility";
 
 export class McpService extends Service {
   static serviceType: string = MCP_SERVICE_NAME;
@@ -42,7 +45,7 @@ export class McpService extends Service {
   };
   private pingConfig: PingConfig = DEFAULT_PING_CONFIG;
   private toolCompatibility: McpToolCompatibility | null = null;
-  private compatibilityInitialized: boolean = false;
+  private compatibilityInitialized = false;
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
@@ -136,10 +139,7 @@ export class McpService extends Service {
     };
     this.connectionStates.set(name, state);
     try {
-      const client = new Client(
-        { name: "ElizaOS", version: "1.0.0" },
-        { capabilities: {} }
-      );
+      const client = new Client({ name: "ElizaOS", version: "1.0.0" }, { capabilities: {} });
       const transport: StdioClientTransport | SSEClientTransport =
         config.type === "stdio"
           ? await this.buildStdioClientTransport(name, config)
@@ -210,7 +210,9 @@ export class McpService extends Service {
     // Use a lightweight call, e.g., listTools as a ping
     await Promise.race([
       connection.client.listTools(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Ping timeout")), this.pingConfig.timeoutMs)),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Ping timeout")), this.pingConfig.timeoutMs)
+      ),
     ]);
     // Reset ping failures on success
     const state = this.connectionStates.get(name);
@@ -247,7 +249,10 @@ export class McpService extends Service {
         try {
           await this.initializeConnection(name, JSON.parse(config));
         } catch (err) {
-          logger.error(`Reconnect attempt failed for ${name}:`, err instanceof Error ? err.message : String(err));
+          logger.error(
+            `Reconnect attempt failed for ${name}:`,
+            err instanceof Error ? err.message : String(err)
+          );
           this.handleDisconnection(name, err);
         }
       }
@@ -304,7 +309,9 @@ export class McpService extends Service {
 
     // Add deprecation warning for legacy "sse" type
     if (config.type === "sse") {
-      logger.warn(`Server "${name}": "sse" transport type is deprecated. Use "streamable-http" or "http" instead for the modern Streamable HTTP transport.`);
+      logger.warn(
+        `Server "${name}": "sse" transport type is deprecated. Use "streamable-http" or "http" instead for the modern Streamable HTTP transport.`
+      );
     }
 
     return new SSEClientTransport(new URL(config.url));
@@ -327,24 +334,24 @@ export class McpService extends Service {
       const tools = (response?.tools || []).map((tool) => {
         // Apply tool compatibility transformation to the tool's input schema
         let processedTool = { ...tool };
-        
+
         if (tool.inputSchema) {
           try {
             // Initialize compatibility if not already done
             if (!this.compatibilityInitialized) {
               this.initializeToolCompatibility();
             }
-            
+
             // Apply compatibility transformations automatically
             processedTool.inputSchema = this.applyToolCompatibility(tool.inputSchema);
-            
+
             logger.debug(`Applied tool compatibility for: ${tool.name} on server: ${serverName}`);
           } catch (error) {
             logger.warn(`Tool compatibility failed for ${tool.name} on ${serverName}:`, error);
             // Keep original schema if transformation fails
           }
         }
-        
+
         return processedTool;
       });
 
@@ -476,10 +483,10 @@ export class McpService extends Service {
 
   private initializeToolCompatibility(): void {
     if (this.compatibilityInitialized) return;
-    
+
     this.toolCompatibility = createMcpToolCompatibility(this.runtime);
     this.compatibilityInitialized = true;
-    
+
     if (this.toolCompatibility) {
       logger.info(`Tool compatibility enabled`);
     } else {

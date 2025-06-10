@@ -15,21 +15,21 @@ export const DEFAULT_MCP_TIMEOUT_SECONDS = 60000;
 export const MIN_MCP_TIMEOUT_SECONDS = 1;
 export const DEFAULT_MAX_RETRIES = 2;
 
-export interface PingConfig{
-enabled: boolean; 
-intervalMs: number; 
-timeoutMs: number;
-failuresBeforeDisconnect: number;
+export interface PingConfig {
+  enabled: boolean;
+  intervalMs: number;
+  timeoutMs: number;
+  failuresBeforeDisconnect: number;
 }
 
 export interface ConnectionState {
-status: 'connecting' | 'connected' | 'disconnected' | 'failed'; 
-pingInterval?: NodeJS.Timer; 
-reconnectTimeout?: NodeJS.Timer; 
-reconnectAttempts: number; 
-lastConnected?: Date; 
-lastError?: Error;
-consecutivePingFailures: number;
+  status: "connecting" | "connected" | "disconnected" | "failed";
+  pingInterval?: NodeJS.Timer;
+  reconnectTimeout?: NodeJS.Timer;
+  reconnectAttempts: number;
+  lastConnected?: Date;
+  lastError?: Error;
+  consecutivePingFailures: number;
 }
 
 export type StdioMcpServerConfig = {
@@ -175,10 +175,22 @@ export const ResourceSelectionSchema = {
 export const DEFAULT_PING_CONFIG: PingConfig = {
   enabled: true,
   intervalMs: 10000, // 10 seconds
-  timeoutMs: 5000,   // 5 seconds
+  timeoutMs: 5000, // 5 seconds
   failuresBeforeDisconnect: 3,
 };
 
 export const MAX_RECONNECT_ATTEMPTS = 5;
 export const BACKOFF_MULTIPLIER = 2;
 export const INITIAL_RETRY_DELAY = 2000; // 2 seconds
+
+interface SuccessResult<T> {
+  success: true;
+  data: T;
+}
+
+interface ErrorResult {
+  success: false;
+  error: string;
+}
+
+export type ValidationResult<T> = SuccessResult<T> | ErrorResult;
