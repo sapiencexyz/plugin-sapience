@@ -177,3 +177,4 @@ dist
 # Bun
 .bun
 bun.lockb
+.turbo

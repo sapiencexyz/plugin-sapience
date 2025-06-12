@@ -1,28 +1,27 @@
 import {
   type Content,
-  type ContentType,
+  ContentType,
   type HandlerCallback,
   type IAgentRuntime,
   type Media,
   type Memory,
   ModelType,
-  ContentType,
   createUniqueUuid,
   logger,
-} from "@elizaos/core";
-import { type State, composePromptFromState } from "@elizaos/core";
-import { resourceAnalysisTemplate } from "../templates/resourceAnalysisTemplate";
-import { toolReasoningTemplate } from "../templates/toolReasoningTemplate";
-import { createMcpMemory } from "./mcp";
+} from '@elizaos/core';
+import { type State, composePromptFromState } from '@elizaos/core';
+import { resourceAnalysisTemplate } from '../templates/resourceAnalysisTemplate';
+import { toolReasoningTemplate } from '../templates/toolReasoningTemplate';
+import { createMcpMemory } from './mcp';
 
 function getMimeTypeToContentType(mimeType?: string): ContentType | undefined {
   if (!mimeType) return undefined;
-  
+
   if (mimeType.startsWith('image/')) return ContentType.IMAGE;
   if (mimeType.startsWith('video/')) return ContentType.VIDEO;
   if (mimeType.startsWith('audio/')) return ContentType.AUDIO;
   if (mimeType.includes('pdf') || mimeType.includes('document')) return ContentType.DOCUMENT;
-  
+
   return undefined;
 }
 
@@ -37,14 +36,14 @@ export function processResourceResult(
   },
   uri: string
 ): { resourceContent: string; resourceMeta: string } {
-  let resourceContent = "";
-  let resourceMeta = "";
+  let resourceContent = '';
+  let resourceMeta = '';
 
   for (const content of result.contents) {
     if (content.text) {
       resourceContent += content.text;
     } else if (content.blob) {
-      resourceContent += `[Binary data - ${content.mimeType || "unknown type"}]`;
+      resourceContent += `[Binary data - ${content.mimeType || 'unknown type'}]`;
     }
 
     resourceMeta += `Resource: ${content.uri || uri}\n`;
@@ -76,29 +75,29 @@ export function processToolResult(
   runtime: IAgentRuntime,
   messageEntityId: string
 ): { toolOutput: string; hasAttachments: boolean; attachments: Media[] } {
-  let toolOutput = "";
+  let toolOutput = '';
   let hasAttachments = false;
   const attachments: Media[] = [];
 
   for (const content of result.content) {
-    if (content.type === "text") {
+    if (content.type === 'text') {
       toolOutput += content.text;
-    } else if (content.type === "image") {
+    } else if (content.type === 'image') {
       hasAttachments = true;
       attachments.push({
         contentType: getMimeTypeToContentType(content.mimeType),
         url: `data:${content.mimeType};base64,${content.data}`,
         id: createUniqueUuid(runtime, messageEntityId),
-        title: "Generated image",
+        title: 'Generated image',
         source: `${serverName}/${toolName}`,
-        description: "Tool-generated image",
-        text: "Generated image",
+        description: 'Tool-generated image',
+        text: 'Generated image',
       });
-    } else if (content.type === "resource") {
+    } else if (content.type === 'resource') {
       const resource = content.resource;
-      if (resource && "text" in resource) {
+      if (resource && 'text' in resource) {
         toolOutput += `\n\nResource (${resource.uri}):\n${resource.text}`;
-      } else if (resource && "blob" in resource) {
+      } else if (resource && 'blob' in resource) {
         toolOutput += `\n\nResource (${resource.uri}): [Binary data]`;
       }
     }
@@ -116,14 +115,14 @@ export async function handleResourceAnalysis(
   resourceMeta: string,
   callback?: HandlerCallback
 ): Promise<void> {
-  await createMcpMemory(runtime, message, "resource", serverName, resourceContent, {
+  await createMcpMemory(runtime, message, 'resource', serverName, resourceContent, {
     uri,
     isResourceAccess: true,
   });
 
   const analysisPrompt = createAnalysisPrompt(
     uri,
-    message.content.text || "",
+    message.content.text || '',
     resourceContent,
     resourceMeta
   );
@@ -136,7 +135,7 @@ export async function handleResourceAnalysis(
     await callback({
       text: analyzedResponse,
       thought: `I analyzed the content from the ${uri} resource on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
-      actions: ["READ_MCP_RESOURCE"],
+      actions: ['READ_MCP_RESOURCE'],
     });
   }
 }
@@ -158,7 +157,7 @@ export async function handleToolResponse(
   },
   callback?: HandlerCallback
 ): Promise<void> {
-  await createMcpMemory(runtime, message, "tool", serverName, toolOutput, {
+  await createMcpMemory(runtime, message, 'tool', serverName, toolOutput, {
     toolName,
     arguments: toolArgs,
     isToolCall: true,
@@ -169,22 +168,37 @@ export async function handleToolResponse(
     mcpProvider,
     toolName,
     serverName,
-    message.content.text || "",
+    message.content.text || '',
     toolOutput,
     hasAttachments
   );
 
-  logger.info("reasoning prompt: ", reasoningPrompt);
+  logger.info('reasoning prompt: ', reasoningPrompt);
 
   const reasonedResponse = await runtime.useModel(ModelType.TEXT_SMALL, {
     prompt: reasoningPrompt,
   });
 
+  const agentId = message.agentId || runtime.agentId;
+  const replyMemory: Memory = {
+    entityId: agentId,
+    roomId: message.roomId,
+    worldId: message.worldId,
+    content: {
+      text: reasonedResponse,
+      thought: `I analyzed the output from the ${toolName} tool on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
+      actions: ['CALL_MCP_TOOL'],
+      attachments: hasAttachments && attachments.length > 0 ? attachments : undefined,
+    },
+  };
+
+  await runtime.createMemory(replyMemory, 'messages');
+
   if (callback) {
     await callback({
       text: reasonedResponse,
       thought: `I analyzed the output from the ${toolName} tool on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
-      actions: ["CALL_MCP_TOOL"],
+      actions: ['CALL_MCP_TOOL'],
       attachments: hasAttachments && attachments.length > 0 ? attachments : undefined,
     });
   }
@@ -194,9 +208,9 @@ export async function sendInitialResponse(callback?: HandlerCallback): Promise<v
   if (callback) {
     const responseContent: Content = {
       thought:
-        "The user is asking for information that can be found in an MCP resource. I will retrieve and analyze the appropriate resource.",
+        'The user is asking for information that can be found in an MCP resource. I will retrieve and analyze the appropriate resource.',
       text: "I'll retrieve that information for you. Let me access the resource...",
-      actions: ["READ_MCP_RESOURCE"],
+      actions: ['READ_MCP_RESOURCE'],
     };
     await callback(responseContent);
   }
@@ -210,7 +224,7 @@ function createAnalysisPrompt(
 ): string {
   const enhancedState: State = {
     data: {},
-    text: "",
+    text: '',
     values: {
       uri,
       userMessage,
