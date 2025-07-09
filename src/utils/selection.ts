@@ -45,7 +45,7 @@ export async function createToolSelectionName({
   mcpProvider,
 }: CreateToolSelectionOptions): Promise<ToolSelectionName | null> {
   const toolSelectionPrompt: string = composePromptFromState({
-    state: { ...state, values: { ...state.values, sapience: mcpProvider.values.sapience } },
+    state: { ...state, values: { ...state.values, sapience: mcpProvider.values.sapience, mcpProvider } },
     template: toolSelectionNameTemplate,
   });
   logger.debug(`[SELECTION] Tool Selection Name Prompt:\n${toolSelectionPrompt}`);
@@ -95,6 +95,13 @@ export async function createToolSelectionArgument({
     return null;
   }
   const { serverName, toolName } = toolSelectionName;
+  
+  // Safety check: serverName and toolName should be defined when noToolAvailable is not true
+  if (!serverName || !toolName) {
+    logger.error("[SELECTION] serverName or toolName is missing from toolSelectionName");
+    return null;
+  }
+  
   const toolInputSchema = mcpProvider.data.sapience[serverName].tools[toolName].inputSchema;
   logger.trace(`[SELECTION] Tool Input Schema:\n${JSON.stringify({ toolInputSchema }, null, 2)}`);
 

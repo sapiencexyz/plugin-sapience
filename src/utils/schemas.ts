@@ -1,6 +1,5 @@
 export const toolSelectionNameSchema = {
   type: "object",
-  required: ["serverName", "toolName"],
   properties: {
     serverName: {
       type: "string",
@@ -19,11 +18,36 @@ export const toolSelectionNameSchema = {
       type: "boolean",
     },
   },
+  anyOf: [
+    {
+      // Case 1: Tool is available - require serverName and toolName
+      required: ["serverName", "toolName"],
+      properties: {
+        noToolAvailable: { const: false }
+      }
+    },
+    {
+      // Case 2: Tool is available but noToolAvailable is not specified - require serverName and toolName
+      required: ["serverName", "toolName"],
+      not: {
+        properties: {
+          noToolAvailable: { const: true }
+        }
+      }
+    },
+    {
+      // Case 3: No tool available - only require noToolAvailable
+      required: ["noToolAvailable"],
+      properties: {
+        noToolAvailable: { const: true }
+      }
+    }
+  ]
 };
 
 export interface ToolSelectionName {
-  serverName: string;
-  toolName: string;
+  serverName?: string;
+  toolName?: string;
   reasoning?: string;
   noToolAvailable?: boolean;
 }

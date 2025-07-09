@@ -58,7 +58,14 @@ export const callToolAction: Action = {
         logger.warn("[NO_TOOL_AVAILABLE] No appropriate tool available for the request");
         return handleNoToolAvailable(callback, toolSelectionName);
       }
+      
       const { serverName, toolName, reasoning } = toolSelectionName;
+      
+      // Safety check: serverName and toolName should be defined when noToolAvailable is not true
+      if (!serverName || !toolName) {
+        logger.error("[ACTION] serverName or toolName is missing from toolSelectionName");
+        return handleNoToolAvailable(callback, toolSelectionName);
+      }
       logger.info(
         `[CALLING] Calling tool "${serverName}/${toolName}" on server with reasoning: "${reasoning}"`
       );

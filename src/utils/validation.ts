@@ -1,6 +1,6 @@
 import type { State } from "@elizaos/core";
 import {
-  type McpProviderData,
+  type SapienceProviderData,
   type McpServer,
   ResourceSelectionSchema,
   type ValidationResult,
@@ -39,7 +39,20 @@ export function validateToolSelectionName(
 
   const data = basicResult.data;
 
-  const mcpData = state.values.mcp || {};
+  // If no tool is available, skip server/tool validation
+  if (data.noToolAvailable === true) {
+    return { success: true, data };
+  }
+
+  // If tool is available, validate server and tool existence
+  if (!data.serverName || !data.toolName) {
+    return {
+      success: false,
+      error: "serverName and toolName are required when noToolAvailable is not true",
+    };
+  }
+
+  const mcpData = state.values.sapience || {};
 
   const server: McpServer | null = mcpData[data.serverName];
   if (!server || server.status !== "connected") {
@@ -105,9 +118,9 @@ export function createToolSelectionFeedbackPrompt(
 ): string {
   let toolsDescription = "";
 
-  for (const [serverName, server] of Object.entries(composedState.values.mcp || {}) as [
+  for (const [serverName, server] of Object.entries(composedState.values.sapience || {}) as [
     string,
-    McpProviderData[string],
+    SapienceProviderData[string],
   ][]) {
     if (server.status !== "connected") continue;
 
@@ -137,9 +150,9 @@ export function createResourceSelectionFeedbackPrompt(
 ): string {
   let resourcesDescription = "";
 
-  for (const [serverName, server] of Object.entries(composedState.values.mcp || {}) as [
+  for (const [serverName, server] of Object.entries(composedState.values.sapience || {}) as [
     string,
-    McpProviderData[string],
+    SapienceProviderData[string],
   ][]) {
     if (server.status !== "connected") continue;
 

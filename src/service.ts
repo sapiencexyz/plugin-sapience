@@ -2,6 +2,7 @@ import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type {
   CallToolResult,
   Resource,
@@ -34,7 +35,7 @@ import {
 
 const DEFAULT_SAPIENCE_SERVER_CONFIG: Record<string, SapienceServerConfig> = {
   sapience: {
-    type: "streamable-http",
+    type: "http",
     url: "https://api.sapience.xyz/mcp",
   },
 };
@@ -151,7 +152,7 @@ export class SapienceService extends Service {
     this.connectionStates.set(name, state);
     try {
       const client = new Client({ name: "ElizaOS", version: "1.0.0" }, { capabilities: {} });
-      const transport: StdioClientTransport | SSEClientTransport =
+      const transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport =
         config.type === "stdio"
           ? await this.buildStdioClientTransport(name, config)
           : await this.buildHttpClientTransport(name, config);
@@ -323,9 +324,11 @@ export class SapienceService extends Service {
       logger.warn(
         `Server "${name}": "sse" transport type is deprecated. Use "streamable-http" or "http" instead for the modern Streamable HTTP transport.`
       );
+      return new SSEClientTransport(new URL(config.url));
     }
 
-    return new SSEClientTransport(new URL(config.url));
+    // Use StreamableHTTPClientTransport for HTTP and streamable-http types
+    return new StreamableHTTPClientTransport(new URL(config.url));
   }
 
   private appendErrorMessage(connection: McpConnection, error: string) {
