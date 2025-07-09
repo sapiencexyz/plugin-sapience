@@ -10,9 +10,9 @@ import type {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
-export const MCP_SERVICE_NAME = "mcp";
-export const DEFAULT_MCP_TIMEOUT_SECONDS = 60000;
-export const MIN_MCP_TIMEOUT_SECONDS = 1;
+export const SAPIENCE_SERVICE_NAME = "sapience";
+export const DEFAULT_SAPIENCE_TIMEOUT_SECONDS = 60000;
+export const MIN_SAPIENCE_TIMEOUT_SECONDS = 1;
 export const DEFAULT_MAX_RETRIES = 2;
 
 export interface PingConfig {
@@ -47,10 +47,10 @@ export type HttpMcpServerConfig = {
   timeout?: number;
 };
 
-export type McpServerConfig = StdioMcpServerConfig | HttpMcpServerConfig;
+export type SapienceServerConfig = StdioMcpServerConfig | HttpMcpServerConfig;
 
-export type McpSettings = {
-  servers: Record<string, McpServerConfig>;
+export type SapienceSettings = {
+  servers: Record<string, SapienceServerConfig>;
   maxRetries?: number;
 };
 
@@ -113,13 +113,13 @@ export interface McpServerInfo {
   resources: Record<string, McpResourceInfo>;
 }
 
-export type McpProvider = {
-  values: { mcp: McpProviderData };
-  data: { mcp: McpProviderData };
+export type SapienceProvider = {
+  values: { sapience: SapienceProviderData };
+  data: { sapience: SapienceProviderData };
   text: string;
 };
 
-export interface McpProviderData {
+export interface SapienceProviderData {
   [serverName: string]: McpServerInfo;
 }
 

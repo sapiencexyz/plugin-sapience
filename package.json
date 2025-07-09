@@ -1,6 +1,6 @@
 {
-  "name": "@elizaos/plugin-mcp",
-  "description": "ElizaOS plugin to integrate with MCP (Model Context Protocol) servers",
+  "name": "@elizaos/plugin-sapience",
+  "description": "ElizaOS plugin for Sapience",
   "module": "dist/index.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/elizaos-plugins/plugin-mcp.git"
+    "url": "git+https://github.com/elizaos-plugins/plugin-sapience.git"
   },
   "publishConfig": {
     "access": "public"
@@ -45,7 +45,8 @@
     "@elizaos/core": "^1.0.4",
     "@modelcontextprotocol/sdk": "^1.7.0",
     "ajv": "^8.17.1",
-    "json5": "^2.2.3"
+    "json5": "^2.2.3",
+    "viem": "^2.0.0"
   },
   "agentConfig": {
     "pluginType": "elizaos:plugin:1.0.0",

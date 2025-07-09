@@ -6,33 +6,23 @@ import {
   type State,
   logger,
 } from "@elizaos/core";
-import type { McpService } from "../service";
-import { MCP_SERVICE_NAME } from "../types";
+import type { SapienceService } from "../service";
+import { SAPIENCE_SERVICE_NAME } from "../types";
 import { handleMcpError } from "../utils/error";
 import { handleToolResponse, processToolResult } from "../utils/processing";
 import { createToolSelectionArgument, createToolSelectionName } from "../utils/selection";
 import { handleNoToolAvailable } from "../utils/handler";
 
 export const callToolAction: Action = {
-  name: "CALL_TOOL",
-  similes: [
-    "CALL_MCP_TOOL",
-    "USE_TOOL",
-    "USE_MCP_TOOL",
-    "EXECUTE_TOOL",
-    "EXECUTE_MCP_TOOL",
-    "RUN_TOOL",
-    "RUN_MCP_TOOL",
-    "INVOKE_TOOL",
-    "INVOKE_MCP_TOOL",
-  ],
-  description: "Calls a tool from an MCP server to perform a specific task",
+  name: "CALL_SAPIENCE_TOOL",
+  similes: ["USE_SAPIENCE_TOOL", "EXECUTE_SAPIENCE_TOOL", "RUN_SAPIENCE_TOOL", "INVOKE_SAPIENCE_TOOL"],
+  description: "Calls a tool from the Sapience server to perform a specific task",
 
   validate: async (runtime: IAgentRuntime, _message: Memory, _state?: State): Promise<boolean> => {
-    const mcpService = runtime.getService<McpService>(MCP_SERVICE_NAME);
-    if (!mcpService) return false;
+    const sapienceService = runtime.getService<SapienceService>(SAPIENCE_SERVICE_NAME);
+    if (!sapienceService) return false;
 
-    const servers = mcpService.getServers();
+    const servers = sapienceService.getServers();
     return (
       servers.length > 0 &&
       servers.some(
@@ -48,12 +38,12 @@ export const callToolAction: Action = {
     _options?: { [key: string]: unknown },
     callback?: HandlerCallback
   ): Promise<boolean> => {
-    const composedState = await runtime.composeState(message, ["RECENT_MESSAGES", "MCP"]);
-    const mcpService = runtime.getService<McpService>(MCP_SERVICE_NAME);
-    if (!mcpService) {
-      throw new Error("MCP service not available");
+    const composedState = await runtime.composeState(message, ["RECENT_MESSAGES", "SAPIENCE"]);
+    const sapienceService = runtime.getService<SapienceService>(SAPIENCE_SERVICE_NAME);
+    if (!sapienceService) {
+      throw new Error("Sapience service not available");
     }
-    const mcpProvider = mcpService.getProviderData();
+    const sapienceProvider = sapienceService.getProviderData();
 
     try {
       // Select the tool with this servername and toolname
@@ -62,7 +52,7 @@ export const callToolAction: Action = {
         state: composedState,
         message,
         callback,
-        mcpProvider,
+        mcpProvider: sapienceProvider,
       });
       if (!toolSelectionName || toolSelectionName.noToolAvailable) {
         logger.warn("[NO_TOOL_AVAILABLE] No appropriate tool available for the request");
@@ -79,7 +69,7 @@ export const callToolAction: Action = {
         state: composedState,
         message,
         callback,
-        mcpProvider,
+        mcpProvider: sapienceProvider,
         toolSelectionName,
       });
       if (!toolSelectionArgument) {
@@ -92,14 +82,23 @@ export const callToolAction: Action = {
         `[SELECTED] Tool Selection result:\n${JSON.stringify(toolSelectionArgument, null, 2)}`
       );
 
-      const result = await mcpService.callTool(
+      const result = await sapienceService.callTool(
         serverName,
         toolName,
         toolSelectionArgument.toolArguments
       );
 
+      // Ensure every content item has a required type property before processing
+      const safeResult = {
+        ...result,
+        content: (result.content || []).map((item: any) => ({
+          type: item.type ?? "text",
+          ...item,
+        })),
+      };
+
       const { toolOutput, hasAttachments, attachments } = processToolResult(
-        result,
+        safeResult,
         serverName,
         toolName,
         runtime,
@@ -116,13 +115,21 @@ export const callToolAction: Action = {
         hasAttachments,
         attachments,
         composedState,
-        mcpProvider,
+        sapienceProvider,
         callback
       );
 
       return true;
     } catch (error) {
-      return handleMcpError(composedState, mcpProvider, error, runtime, message, "tool", callback);
+      return handleMcpError(
+        composedState,
+        sapienceProvider,
+        error,
+        runtime,
+        message,
+        "tool",
+        callback
+      );
     }
   },
 
@@ -138,14 +145,14 @@ export const callToolAction: Action = {
         name: "{{assistant}}",
         content: {
           text: "I'll help you with that request. Let me access the right tool...",
-          actions: ["CALL_MCP_TOOL"],
+          actions: ["CALL_SAPIENCE_TOOL"],
         },
       },
       {
         name: "{{assistant}}",
         content: {
           text: "I found the following information about climate change:\n\nClimate change refers to long-term shifts in temperatures and weather patterns. These shifts may be natural, but since the 1800s, human activities have been the main driver of climate change, primarily due to the burning of fossil fuels like coal, oil, and gas, which produces heat-trapping gases.",
-          actions: ["CALL_MCP_TOOL"],
+          actions: ["CALL_SAPIENCE_TOOL"],
         },
       },
     ],

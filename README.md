@@ -1,17 +1,8 @@
-# MCP Plugin for ElizaOS
+# ElizaOS Plugin for Sapience
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-blue.svg)](https://conventionalcommits.org)
 
-This plugin integrates the Model Context Protocol (MCP) with ElizaOS, allowing agents to connect to multiple MCP servers and use their resources, prompts, and tools.
-
-## 🔍 What is MCP?
-
-The [Model Context Protocol](https://modelcontextprotocol.io) (MCP) is an open protocol that enables seamless integration between LLM applications and external data sources and tools. It provides a standardized way to connect LLMs with the context they need.
-
-This plugin allows your ElizaOS agents to access multiple MCP servers simultaneously, each providing different capabilities:
-
-- **Resources**: Context and data for the agent to reference
-- **Tools**: Functions for the agent to execute
+This plugin for ElizaOS provides seamless integration with the Sapience API, allowing your agent to leverage its powerful tools and resources.
 
 ## 📦 Installation
 
@@ -20,42 +11,74 @@ Install the plugin in your ElizaOS project:
 - **npm**
 
 ```bash
-npm install @elizaos/plugin-mcp
+npm install @elizaos/plugin-sapience
 ```
 
 - **pnpm**
 
 ```bash
-pnpm install @elizaos/plugin-mcp
+pnpm install @elizaos/plugin-sapience
 ```
 
 - **yarn**
 
 ```bash
-yarn add @elizaos/plugin-mcp
+yarn add @elizaos/plugin-sapience
 ```
 
 - **bun**
 
 ```bash
-bun add @elizaos/plugin-mcp
+bun add @elizaos/plugin-sapience
 ```
 
-## 🚀 Usage
+## 🚀 Key Features
 
-1. Add the plugin to your character configuration:
+This plugin provides three main capabilities:
+
+### 1. **MCP Data Integration** 📊
+- Connects to the Sapience MCP endpoint to access market data
+- Provides calldata for blockchain transactions
+- Includes tools for querying positions, prices, and market information
+
+### 2. **Transaction Simulation** 🧪
+- **Action**: `SIMULATE_TRANSACTION`
+- Simulates blockchain transactions without submitting them
+- Provides gas estimates and checks for potential errors
+- **Private Key**: Optional (uses actual caller address if available for more accurate simulation)
+
+### 3. **Transaction Submission** 🚀
+- **Action**: `SUBMIT_TRANSACTION`
+- Submits blockchain transactions to the network
+- **Private Key**: **Required** in environment variables (`PRIVATE_KEY`)
+- Handles gas estimation automatically
+
+## 🔧 Configuration
+
+### Environment Variables
+- `PRIVATE_KEY`: Required for transaction submission, optional for simulation
+- `RPC_URL`: Optional (defaults to Base mainnet)
+
+### Basic Setup
+
+This plugin works out of the box by automatically connecting to the Sapience API. No configuration is required for MCP data access.
+
+If you need to override the default Sapience configuration or add other servers, you can do so in your character configuration file:
 
 ```json
 {
   "name": "Your Character",
-  "plugins": ["@elizaos/plugin-mcp"],
+  "plugins": ["@elizaos/plugin-sapience"],
   "settings": {
-    "mcp": {
+    "sapience": {
       "servers": {
-        "github": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-github"]
+        "sapience": {
+          "type": "streamable-http",
+          "url": "https://custom-sapience.foil.network/mcp"
+        },
+        "another-server": {
+          "type": "http",
+          "url": "https://another-mcp-server.com"
         }
       }
     }
@@ -63,99 +86,68 @@ bun add @elizaos/plugin-mcp
 }
 ```
 
-## ⚙️ Configuration Options
+## 📖 Quick Start Examples
 
-MCP supports multiple transport types for connecting to servers. Each type has its own configuration options.
-
-### Transport Types
-
-- **`streamable-http`** or **`http`** - Modern Streamable HTTP transport (recommended)
-- **`sse`** - Legacy Server-Sent Events transport (deprecated, use `streamable-http` instead)  
-- **`stdio`** - Process-based transport using standard input/output
-
-### HTTP Transport Options (streamable-http, http, sse)
-
-| Option    | Type   | Description                            |
-| --------- | ------ | -------------------------------------- |
-| `type`    | string | Transport type: "streamable-http", "http", or "sse" |
-| `url`     | string | The URL of the HTTP/SSE endpoint       |
-| `timeout` | number | _Optional_ Timeout for connections     |
-
-### stdio Transport Options
-
-| Option           | Type     | Description                                       |
-| ---------------- | -------- | ------------------------------------------------- |
-| `type`           | string   | Must be "stdio"                                   |
-| `command`        | string   | _Optional_ The command to run the MCP server      |
-| `args`           | string[] | _Optional_ Command-line arguments for the server  |
-| `env`            | object   | _Optional_ Environment variables to pass to the server |
-| `cwd`            | string   | _Optional_ Working directory to run the server in |
-| `timeoutInMillis`| number   | _Optional_ Timeout in milliseconds for tool calls |
-
-### Example Configuration
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "my-modern-server": {
-        "type": "streamable-http",
-        "url": "https://example.com/mcp"
-      },
-      "my-local-server": {
-        "type": "http",
-        "url": "http://localhost:3000",
-        "timeout": 30
-      },
-      "my-legacy-server": {
-        "type": "sse",
-        "url": "http://localhost:8080"
-      },
-      "my-stdio-server": {
-        "type": "stdio",
-        "command": "mcp-server",
-        "args": ["--config", "config.json"],
-        "cwd": "/path/to/server",
-        "timeoutInMillis": 60000
-      }
-    },
-    "maxRetries": 3
-  }
-}
+### Getting Market Data
+```
+"Show me the current markets available"
+"What's the price of ETH in market 1?"
 ```
 
-## 🛠️ Using MCP Capabilities
+### Creating and Testing Transactions
+```
+"Create a trader position for market 1 with 100 USDC collateral"
+"Simulate this transaction before I submit it"
+"Submit this transaction to the blockchain"
+```
 
-Once configured, the plugin automatically exposes MCP servers' capabilities to your agent:
+### Environment Setup
+```bash
+export PRIVATE_KEY="0x..."  # Required for transaction submission
+export RPC_URL="https://..."  # Optional, defaults to Base mainnet
+```
+
+## 🛠️ Using Sapience Capabilities
+
+Once configured, the plugin automatically exposes the Sapience server's capabilities to your agent:
 
 ### Context Provider
 
-The plugin includes one provider that adds MCP capabilities to the agent's context:
+The plugin includes one provider that adds Sapience capabilities to the agent's context:
 
-1. **`MCP`**: Lists available servers and their tools and resources
+1.  **`Sapience`**: Lists available tools and resources from the MCP endpoint.
 
 ### Actions
 
-The plugin provides two actions for interacting with MCP servers:
+The plugin provides four actions for comprehensive blockchain interaction:
 
-1. **`CALL_TOOL`**: Executes tools from connected MCP servers
-2. **`READ_RESOURCE`**: Accesses resources from connected MCP servers
+1.  **`CALL_SAPIENCE_TOOL`**: Executes tools from the Sapience MCP server (market data, generate calldata).
+2.  **`READ_SAPIENCE_RESOURCE`**: Accesses resources from the Sapience MCP server.
+3.  **`SIMULATE_TRANSACTION`**: Simulates blockchain transactions for testing and gas estimation.
+4.  **`SUBMIT_TRANSACTION`**: Submits blockchain transactions to the network.
+
+### Typical Workflow
+
+1. **Query Market Data**: Use `CALL_SAPIENCE_TOOL` to get market information
+2. **Generate Transaction**: Use `CALL_SAPIENCE_TOOL` to create transaction calldata
+3. **Test Transaction**: Use `SIMULATE_TRANSACTION` to verify the transaction
+4. **Submit Transaction**: Use `SUBMIT_TRANSACTION` to execute on-chain
 
 ## 🔄 Plugin Flow
 
-The following diagram illustrates the MCP plugin's flow for tool selection and execution:
+The following diagram illustrates the plugin's flow for tool selection and execution:
 
 ```mermaid
 graph TD
     %% Starting point - User request
-    start[User Request] --> action[CALL_TOOL Action]
+    start[User Request] --> action[CALL_SAPIENCE_TOOL Action]
 
-    %% MCP Server Validation
-    action --> check{MCP Servers Available?}
+    %% Server Validation
+    action --> check{Sapience Server Available?}
     check -->|No| fail[Return No Tools Available]
     
     %% Tool Selection Flow
-    check -->|Yes| state[Get MCP Provider Data]
+    check -->|Yes| state[Get Sapience Provider Data]
     state --> prompt[Create Tool Selection Prompt]
     
     %% First Model Use - Tool Selection
@@ -173,7 +165,7 @@ graph TD
     toolAvailable -->|No| fallback[Fallback Response]
     
     %% Tool Execution Flow
-    toolAvailable -->|Yes| callTool[Call MCP Tool]
+    toolAvailable -->|Yes| callTool[Call Sapience Tool]
     callTool --> processResult[Process Tool Result]
     
     %% Memory Creation
@@ -194,40 +186,43 @@ graph TD
     class respondToUser,fallback output;
 ```
 
-## 📋 Example: Setting Up Multiple MCP Servers
+## 📋 Example: Default and Custom Setups
 
-Here's a complete example configuration with multiple MCP servers of both types:
+By default, no configuration is needed. The plugin will automatically connect to the Sapience API.
+
+To add another server while keeping the default Sapience server, you can do the following:
 
 ```json
 {
   "name": "Developer Assistant",
-  "plugins": ["@elizaos/plugin-mcp", "other-plugins"],
+  "plugins": ["@elizaos/plugin-sapience"],
   "settings": {
-    "mcp": {
+    "sapience": {
       "servers": {
-        "github": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-github"],
-          "env": {
-            "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
-          }
-        },
-        "puppeteer": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
-        },
-        "google-maps": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-google-maps"],
-          "env": {
-            "GOOGLE_MAPS_API_KEY": "<YOUR_API_KEY>"
-          }
+        "another-server": {
+          "type": "streamable-http",
+          "url": "https://another-mcp-server.com"
         }
-      },
-      "maxRetries": 2
+      }
+    }
+  }
+}
+```
+
+To override the default Sapience server, simply define a server with the name `sapience`:
+
+```json
+{
+  "name": "Developer Assistant",
+  "plugins": ["@elizaos/plugin-sapience"],
+  "settings": {
+    "sapience": {
+      "servers": {
+        "sapience": {
+          "type": "streamable-http",
+          "url": "https://custom.sapience.url/mcp"
+        }
+      }
     }
   }
 }
@@ -235,16 +230,16 @@ Here's a complete example configuration with multiple MCP servers of both types:
 
 ## 🔒 Security Considerations
 
-Please be aware that MCP servers can execute arbitrary code, so only connect to servers you trust.
+Please be aware that the Sapience server can execute arbitrary code, so only connect to servers you trust.
 
 ## 🔍 Troubleshooting
 
-If you encounter issues with the MCP plugin:
+If you encounter issues with the Sapience plugin:
 
-1. Check that your MCP servers are correctly configured and running
-2. Ensure the commands are accessible in the ElizaOS environment
-3. Review the logs for connection errors
-4. Verify that the plugin is properly loaded in your character configuration
+1.  Check that your server is correctly configured and running.
+2.  Ensure the server URL is accessible in the ElizaOS environment.
+3.  Review the logs for connection errors.
+4.  Verify that the plugin is properly loaded in your character configuration.
 
 ## 👥 Contributing
 
@@ -252,11 +247,11 @@ Thanks for considering contributing to our project!
 
 ### How to Contribute
 
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature-branch-name`.
-3. Make your changes.
-4. Commit your changes using conventional commits.
-5. Push to your fork and submit a pull request.
+1.  Fork the repository.
+2.  Create a new branch: `git checkout -b feature-branch-name`.
+3.  Make your changes.
+4.  Commit your changes using conventional commits.
+5.  Push to your fork and submit a pull request.
 
 ### Commit Guidelines
 

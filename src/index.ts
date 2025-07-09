@@ -1,22 +1,24 @@
 import { type IAgentRuntime, type Plugin, logger } from "@elizaos/core";
 import { callToolAction } from "./actions/callToolAction";
 import { readResourceAction } from "./actions/readResourceAction";
+import { simulateTransactionAction } from "./actions/simulateTransactionAction";
+import { submitTransactionAction } from "./actions/submitTransactionAction";
 import { provider } from "./provider";
-import { McpService } from "./service";
+import { SapienceService } from "./service";
 
-const mcpPlugin: Plugin = {
-  name: "mcp",
-  description: "Plugin for connecting to MCP (Model Context Protocol) servers",
+const sapiencePlugin: Plugin = {
+  name: "sapience",
+  description: "Plugin for connecting to the Sapience API",
 
   init: async (_config: Record<string, string>, _runtime: IAgentRuntime) => {
-    logger.info("Initializing MCP plugin...");
+    logger.info("Initializing Sapience plugin...");
   },
 
-  services: [McpService],
-  actions: [callToolAction, readResourceAction],
+  services: [SapienceService],
+  actions: [callToolAction, readResourceAction, simulateTransactionAction, submitTransactionAction],
   providers: [provider],
 };
 
-export type { McpService };
+export type { SapienceService };
 
-export default mcpPlugin;
+export default sapiencePlugin;

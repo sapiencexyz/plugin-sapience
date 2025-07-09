@@ -8,9 +8,8 @@ import {
   composePromptFromState,
   logger,
 } from "@elizaos/core";
-import type { McpService } from "../service";
+import type { SapienceService } from "../service";
 import { resourceSelectionTemplate } from "../templates/resourceSelectionTemplate";
-import { MCP_SERVICE_NAME } from "../types";
 import { handleMcpError } from "../utils/error";
 import {
   handleResourceAnalysis,
@@ -74,7 +73,7 @@ export const readResourceAction: Action = {
   description: "Reads a resource from an MCP server",
 
   validate: async (runtime: IAgentRuntime, _message: Memory, _state?: State): Promise<boolean> => {
-    const mcpService = runtime.getService<McpService>(MCP_SERVICE_NAME);
+    const mcpService = runtime.getService<SapienceService>("mcp");
     if (!mcpService) return false;
 
     const servers = mcpService.getServers();
@@ -95,7 +94,7 @@ export const readResourceAction: Action = {
   ): Promise<boolean> => {
     const composedState = await runtime.composeState(message, ["RECENT_MESSAGES", "MCP"]);
 
-    const mcpService = runtime.getService<McpService>(MCP_SERVICE_NAME);
+    const mcpService = runtime.getService<SapienceService>("mcp");
     if (!mcpService) {
       throw new Error("MCP service not available");
     }

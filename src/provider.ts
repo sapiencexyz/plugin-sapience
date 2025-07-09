@@ -1,21 +1,21 @@
 import type { IAgentRuntime, Memory, Provider, State } from "@elizaos/core";
-import type { McpService } from "./service";
-import { MCP_SERVICE_NAME } from "./types";
+import type { SapienceService } from "./service";
+import { SAPIENCE_SERVICE_NAME } from "./types";
 
 export const provider: Provider = {
-  name: "MCP",
-  description: "Information about connected MCP servers, tools, and resources",
+  name: "Sapience",
+  description: "Information about the connected Sapience server, tools, and resources",
 
   get: async (runtime: IAgentRuntime, _message: Memory, _state: State) => {
-    const mcpService = runtime.getService<McpService>(MCP_SERVICE_NAME);
-    if (!mcpService) {
+    const sapienceService = runtime.getService<SapienceService>(SAPIENCE_SERVICE_NAME);
+    if (!sapienceService) {
       return {
-        values: { mcp: {} },
-        data: { mcp: {} },
-        text: "No MCP servers are available.",
+        values: { sapience: {} },
+        data: { sapience: {} },
+        text: "The Sapience server is not available.",
       };
     }
 
-    return mcpService.getProviderData();
+    return sapienceService.getProviderData();
   },
 };

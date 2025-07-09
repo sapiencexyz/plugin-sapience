@@ -12,7 +12,8 @@ import {
 import { type State, composePromptFromState } from '@elizaos/core';
 import { resourceAnalysisTemplate } from '../templates/resourceAnalysisTemplate';
 import { toolReasoningTemplate } from '../templates/toolReasoningTemplate';
-import { createMcpMemory } from './mcp';
+import { createSapienceMemory } from './mcp';
+import type { SapienceProvider } from '../types';
 
 function getMimeTypeToContentType(mimeType?: string): ContentType | undefined {
   if (!mimeType) return undefined;
@@ -115,7 +116,7 @@ export async function handleResourceAnalysis(
   resourceMeta: string,
   callback?: HandlerCallback
 ): Promise<void> {
-  await createMcpMemory(runtime, message, 'resource', serverName, resourceContent, {
+  await createSapienceMemory(runtime, message, 'resource', serverName, resourceContent, {
     uri,
     isResourceAccess: true,
   });
@@ -135,7 +136,7 @@ export async function handleResourceAnalysis(
     await callback({
       text: analyzedResponse,
       thought: `I analyzed the content from the ${uri} resource on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
-      actions: ['READ_MCP_RESOURCE'],
+      actions: ['READ_SAPIENCE_RESOURCE'],
     });
   }
 }
@@ -150,14 +151,10 @@ export async function handleToolResponse(
   hasAttachments: boolean,
   attachments: Media[],
   state: State,
-  mcpProvider: {
-    values: { mcp: unknown };
-    data: { mcp: unknown };
-    text: string;
-  },
+  sapienceProvider: SapienceProvider,
   callback?: HandlerCallback
 ): Promise<void> {
-  await createMcpMemory(runtime, message, 'tool', serverName, toolOutput, {
+  await createSapienceMemory(runtime, message, 'tool', serverName, toolOutput, {
     toolName,
     arguments: toolArgs,
     isToolCall: true,
@@ -165,7 +162,7 @@ export async function handleToolResponse(
 
   const reasoningPrompt = createReasoningPrompt(
     state,
-    mcpProvider,
+    sapienceProvider,
     toolName,
     serverName,
     message.content.text || '',
@@ -187,7 +184,7 @@ export async function handleToolResponse(
     content: {
       text: reasonedResponse,
       thought: `I analyzed the output from the ${toolName} tool on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
-      actions: ['CALL_MCP_TOOL'],
+      actions: ['CALL_SAPIENCE_TOOL'],
       attachments: hasAttachments && attachments.length > 0 ? attachments : undefined,
     },
   };
@@ -198,7 +195,7 @@ export async function handleToolResponse(
     await callback({
       text: reasonedResponse,
       thought: `I analyzed the output from the ${toolName} tool on ${serverName} and crafted a thoughtful response that addresses the user's request while maintaining my conversational style.`,
-      actions: ['CALL_MCP_TOOL'],
+      actions: ['CALL_SAPIENCE_TOOL'],
       attachments: hasAttachments && attachments.length > 0 ? attachments : undefined,
     });
   }
@@ -208,9 +205,9 @@ export async function sendInitialResponse(callback?: HandlerCallback): Promise<v
   if (callback) {
     const responseContent: Content = {
       thought:
-        'The user is asking for information that can be found in an MCP resource. I will retrieve and analyze the appropriate resource.',
+        'The user is asking for information that can be found in a Sapience resource. I will retrieve and analyze the appropriate resource.',
       text: "I'll retrieve that information for you. Let me access the resource...",
-      actions: ['READ_MCP_RESOURCE'],
+      actions: ['READ_SAPIENCE_RESOURCE'],
     };
     await callback(responseContent);
   }
@@ -241,11 +238,7 @@ function createAnalysisPrompt(
 
 function createReasoningPrompt(
   state: State,
-  mcpProvider: {
-    values: { mcp: unknown };
-    data: { mcp: unknown };
-    text: string;
-  },
+  sapienceProvider: SapienceProvider,
   toolName: string,
   serverName: string,
   userMessage: string,
@@ -256,12 +249,12 @@ function createReasoningPrompt(
     ...state,
     values: {
       ...state.values,
-      mcpProvider,
       toolName,
       serverName,
       userMessage,
       toolOutput,
       hasAttachments,
+      sapience: sapienceProvider.values.sapience,
     },
   };
 

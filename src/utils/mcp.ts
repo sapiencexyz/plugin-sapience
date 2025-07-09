@@ -1,13 +1,13 @@
 import type { IAgentRuntime, Memory } from "@elizaos/core";
 import type {
-  McpProvider,
-  McpProviderData,
+  SapienceProvider,
+  SapienceProviderData,
   McpResourceInfo,
   McpServer,
   McpToolInfo,
 } from "../types";
 
-export async function createMcpMemory(
+export async function createSapienceMemory(
   runtime: IAgentRuntime,
   message: Memory,
   type: string,
@@ -32,20 +32,20 @@ export async function createMcpMemory(
   await runtime.createMemory(memory, type === "resource" ? "resources" : "tools", true);
 }
 
-export function buildMcpProviderData(servers: McpServer[]): McpProvider {
-  const mcpData: McpProviderData = {};
+export function buildSapienceProviderData(servers: McpServer[]): SapienceProvider {
+  const sapienceData: SapienceProviderData = {};
   let textContent = "";
 
   if (servers.length === 0) {
     return {
-      values: { mcp: {} },
-      data: { mcp: {} },
-      text: "No MCP servers are currently connected.",
+      values: { sapience: {} },
+      data: { sapience: {} },
+      text: "No Sapience servers are currently connected.",
     };
   }
 
   for (const server of servers) {
-    mcpData[server.name] = {
+    sapienceData[server.name] = {
       status: server.status,
       tools: {} as Record<string, McpToolInfo>,
       resources: {} as Record<string, McpResourceInfo>,
@@ -57,7 +57,7 @@ export function buildMcpProviderData(servers: McpServer[]): McpProvider {
       textContent += "### Tools:\n\n";
 
       for (const tool of server.tools) {
-        mcpData[server.name].tools[tool.name] = {
+        sapienceData[server.name].tools[tool.name] = {
           description: tool.description || "No description available",
           inputSchema: tool.inputSchema || {},
         };
@@ -71,7 +71,7 @@ export function buildMcpProviderData(servers: McpServer[]): McpProvider {
       textContent += "### Resources:\n\n";
 
       for (const resource of server.resources) {
-        mcpData[server.name].resources[resource.uri] = {
+        sapienceData[server.name].resources[resource.uri] = {
           name: resource.name,
           description: resource.description || "No description available",
           mimeType: resource.mimeType,
@@ -86,8 +86,8 @@ export function buildMcpProviderData(servers: McpServer[]): McpProvider {
   }
 
   return {
-    values: { mcp: mcpData },
-    data: { mcp: mcpData },
-    text: `# MCP Configuration\n\n${textContent}`,
+    values: { sapience: sapienceData },
+    data: { sapience: sapienceData },
+    text: `# Sapience Configuration\n\n${textContent}`,
   };
 }

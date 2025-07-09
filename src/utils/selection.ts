@@ -8,7 +8,7 @@ import {
   logger,
 } from "@elizaos/core";
 import { withModelRetry } from "./wrapper";
-import type { McpProvider, McpProviderData } from "../types";
+import type { SapienceProvider, SapienceProviderData } from "../types";
 import type { ToolSelectionName, ToolSelectionArgument } from "./schemas";
 import {
   toolSelectionArgumentTemplate,
@@ -21,7 +21,7 @@ export interface CreateToolSelectionOptions {
   state: State;
   message: Memory;
   callback?: HandlerCallback;
-  mcpProvider: McpProvider;
+  mcpProvider: SapienceProvider;
   toolSelectionName?: ToolSelectionName;
 }
 
@@ -45,7 +45,7 @@ export async function createToolSelectionName({
   mcpProvider,
 }: CreateToolSelectionOptions): Promise<ToolSelectionName | null> {
   const toolSelectionPrompt: string = composePromptFromState({
-    state: { ...state, values: { ...state.values, mcpProvider } },
+    state: { ...state, values: { ...state.values, sapience: mcpProvider.values.sapience } },
     template: toolSelectionNameTemplate,
   });
   logger.debug(`[SELECTION] Tool Selection Name Prompt:\n${toolSelectionPrompt}`);
@@ -95,7 +95,7 @@ export async function createToolSelectionArgument({
     return null;
   }
   const { serverName, toolName } = toolSelectionName;
-  const toolInputSchema = mcpProvider.data.mcp[serverName].tools[toolName].inputSchema;
+  const toolInputSchema = mcpProvider.data.sapience[serverName].tools[toolName].inputSchema;
   logger.trace(`[SELECTION] Tool Input Schema:\n${JSON.stringify({ toolInputSchema }, null, 2)}`);
 
   // Create a tool selection argument prompt
@@ -139,9 +139,9 @@ function createToolSelectionFeedbackPrompt(
 ): string {
   let toolsDescription = "";
 
-  for (const [serverName, server] of Object.entries(state.values.mcp || {}) as [
+  for (const [serverName, server] of Object.entries(state.values.sapience || {}) as [
     string,
-    McpProviderData[string],
+    SapienceProviderData[string],
   ][]) {
     if (server.status !== "connected") continue;
 

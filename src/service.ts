@@ -9,14 +9,14 @@ import type {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import {
-  DEFAULT_MCP_TIMEOUT_SECONDS,
-  MCP_SERVICE_NAME,
+  DEFAULT_SAPIENCE_TIMEOUT_SECONDS,
+  SAPIENCE_SERVICE_NAME,
   type McpConnection,
-  type McpProvider,
+  type SapienceProvider,
   type McpResourceResponse,
   type McpServer,
-  type McpServerConfig,
-  type McpSettings,
+  type SapienceServerConfig,
+  type SapienceSettings,
   type HttpMcpServerConfig,
   type StdioMcpServerConfig,
   DEFAULT_PING_CONFIG,
@@ -26,21 +26,28 @@ import {
   type ConnectionState,
   type PingConfig,
 } from "./types";
-import { buildMcpProviderData } from "./utils/mcp";
+import { buildSapienceProviderData } from "./utils/mcp";
 import {
   createMcpToolCompatibilitySync as createMcpToolCompatibility,
   type McpToolCompatibility,
 } from "./tool-compatibility";
 
-export class McpService extends Service {
-  static serviceType: string = MCP_SERVICE_NAME;
-  capabilityDescription = "Enables the agent to interact with MCP (Model Context Protocol) servers";
+const DEFAULT_SAPIENCE_SERVER_CONFIG: Record<string, SapienceServerConfig> = {
+  sapience: {
+    type: "streamable-http",
+    url: "https://api.sapience.xyz/mcp",
+  },
+};
+
+export class SapienceService extends Service {
+  static serviceType: string = SAPIENCE_SERVICE_NAME;
+  capabilityDescription = "Enables the agent to interact with the Sapience API";
 
   private connections: Map<string, McpConnection> = new Map();
   private connectionStates: Map<string, ConnectionState> = new Map();
-  private mcpProvider: McpProvider = {
-    values: { mcp: {} },
-    data: { mcp: {} },
+  private sapienceProvider: SapienceProvider = {
+    values: { sapience: {} },
+    data: { sapience: {} },
     text: "",
   };
   private pingConfig: PingConfig = DEFAULT_PING_CONFIG;
@@ -49,11 +56,11 @@ export class McpService extends Service {
 
   constructor(runtime: IAgentRuntime) {
     super(runtime);
-    this.initializeMcpServers();
+    this.initializeSapienceServers();
   }
 
-  static async start(runtime: IAgentRuntime): Promise<McpService> {
-    const service = new McpService(runtime);
+  static async start(runtime: IAgentRuntime): Promise<SapienceService> {
+    const service = new SapienceService(runtime);
     return service;
   }
 
@@ -69,30 +76,34 @@ export class McpService extends Service {
     this.connectionStates.clear();
   }
 
-  private async initializeMcpServers(): Promise<void> {
+  private async initializeSapienceServers(): Promise<void> {
     try {
-      const mcpSettings = this.getMcpSettings();
-      if (!mcpSettings || !mcpSettings.servers) {
-        logger.info("No MCP servers configured.");
+      const sapienceSettings = this.getSapienceSettings();
+      const serverConfigs = sapienceSettings?.servers ?? {};
+
+      const finalServerConfigs = { ...DEFAULT_SAPIENCE_SERVER_CONFIG, ...serverConfigs };
+
+      if (Object.keys(finalServerConfigs).length === 0) {
+        logger.info("No Sapience servers configured.");
         return;
       }
-      await this.updateServerConnections(mcpSettings.servers);
+      await this.updateServerConnections(finalServerConfigs);
       const servers = this.getServers();
-      this.mcpProvider = buildMcpProviderData(servers);
+      this.sapienceProvider = buildSapienceProviderData(servers);
     } catch (error) {
       logger.error(
-        "Failed to initialize MCP servers:",
+        "Failed to initialize Sapience servers:",
         error instanceof Error ? error.message : String(error)
       );
     }
   }
 
-  private getMcpSettings(): McpSettings | undefined {
-    return this.runtime.getSetting("mcp") as McpSettings;
+  private getSapienceSettings(): SapienceSettings | undefined {
+    return this.runtime.getSetting("sapience") as SapienceSettings;
   }
 
   private async updateServerConnections(
-    serverConfigs: Record<string, McpServerConfig>
+    serverConfigs: Record<string, SapienceServerConfig>
   ): Promise<void> {
     const currentNames = new Set(this.connections.keys());
     const newNames = new Set(Object.keys(serverConfigs));
@@ -100,7 +111,7 @@ export class McpService extends Service {
     for (const name of currentNames) {
       if (!newNames.has(name)) {
         await this.deleteConnection(name);
-        logger.info(`Deleted MCP server: ${name}`);
+        logger.info(`Deleted Sapience server: ${name}`);
       }
     }
 
@@ -111,7 +122,7 @@ export class McpService extends Service {
           await this.initializeConnection(name, config);
         } catch (error) {
           logger.error(
-            `Failed to connect to new MCP server ${name}:`,
+            `Failed to connect to new Sapience server ${name}:`,
             error instanceof Error ? error.message : String(error)
           );
         }
@@ -119,10 +130,10 @@ export class McpService extends Service {
         try {
           await this.deleteConnection(name);
           await this.initializeConnection(name, config);
-          logger.info(`Reconnected MCP server with updated config: ${name}`);
+          logger.info(`Reconnected Sapience server with updated config: ${name}`);
         } catch (error) {
           logger.error(
-            `Failed to reconnect MCP server ${name}:`,
+            `Failed to reconnect Sapience server ${name}:`,
             error instanceof Error ? error.message : String(error)
           );
         }
@@ -130,7 +141,7 @@ export class McpService extends Service {
     }
   }
 
-  private async initializeConnection(name: string, config: McpServerConfig): Promise<void> {
+  private async initializeConnection(name: string, config: SapienceServerConfig): Promise<void> {
     await this.deleteConnection(name); // Clean up if exists
     const state: ConnectionState = {
       status: "connecting",
@@ -170,7 +181,7 @@ export class McpService extends Service {
       state.reconnectAttempts = 0;
       state.consecutivePingFailures = 0;
       this.startPingMonitoring(name);
-      logger.info(`Successfully connected to MCP server: ${name}`);
+      logger.info(`Successfully connected to Sapience server: ${name}`);
     } catch (error) {
       state.status = "disconnected";
       state.lastError = error instanceof Error ? error : new Error(String(error));
@@ -318,8 +329,10 @@ export class McpService extends Service {
   }
 
   private appendErrorMessage(connection: McpConnection, error: string) {
-    const newError = connection.server.error ? `${connection.server.error}\n${error}` : error;
-    connection.server.error = newError;
+    if (!connection.server.error?.includes(error)) {
+      const newError = connection.server.error ? `${connection.server.error}\n${error}` : error;
+      connection.server.error = newError;
+    }
   }
 
   private async fetchToolsList(serverName: string): Promise<Tool[]> {
@@ -373,15 +386,14 @@ export class McpService extends Service {
   private async fetchResourcesList(serverName: string): Promise<Resource[]> {
     try {
       const connection = this.getServerConnection(serverName);
-      if (!connection) {
-        return [];
+      if (connection) {
+        const response = await connection.client.listResources();
+        return response?.resources || [];
       }
-
-      const response = await connection.client.listResources();
-      return response?.resources || [];
+      return [];
     } catch (error) {
-      logger.warn(
-        `No resources found for ${serverName}:`,
+      logger.error(
+        `Failed to fetch resources list for ${serverName}:`,
         error instanceof Error ? error.message : String(error)
       );
       return [];
@@ -407,13 +419,11 @@ export class McpService extends Service {
   }
 
   public getServers(): McpServer[] {
-    return Array.from(this.connections.values())
-      .filter((conn) => !conn.server.disabled)
-      .map((conn) => conn.server);
+    return Array.from(this.connections.values()).map((c) => c.server);
   }
 
-  public getProviderData(): McpProvider {
-    return this.mcpProvider;
+  public getProviderData(): SapienceProvider {
+    return this.sapienceProvider;
   }
 
   public async callTool(
@@ -428,10 +438,10 @@ export class McpService extends Service {
     if (connection.server.disabled) {
       throw new Error(`Server "${serverName}" is disabled`);
     }
-    let timeout = DEFAULT_MCP_TIMEOUT_SECONDS;
+    let timeout = DEFAULT_SAPIENCE_TIMEOUT_SECONDS;
     try {
       const config = JSON.parse(connection.server.config);
-      timeout = config.timeoutInMillis || DEFAULT_MCP_TIMEOUT_SECONDS;
+      timeout = config.timeoutInMillis || DEFAULT_SAPIENCE_TIMEOUT_SECONDS;
     } catch (error) {
       logger.error(
         `Failed to parse timeout configuration for server ${serverName}:`,
@@ -450,33 +460,33 @@ export class McpService extends Service {
   }
 
   public async readResource(serverName: string, uri: string): Promise<McpResourceResponse> {
-    const connection = this.connections.get(serverName);
+    const connection = this.getServerConnection(serverName);
     if (!connection) {
-      throw new Error(`No connection found for server: ${serverName}`);
+      throw new Error(`Server not found: ${serverName}`);
     }
-    if (connection.server.disabled) {
-      throw new Error(`Server "${serverName}" is disabled`);
-    }
-    return await connection.client.readResource({ uri });
+    const result = await connection.client.readResource({ uri });
+    // TODO: This is a temporary fix to align the types.
+    // The SDK's ReadResourceOutput needs to be aligned with McpResourceResponse.
+    return result as unknown as McpResourceResponse;
   }
 
   public async restartConnection(serverName: string): Promise<void> {
     const connection = this.connections.get(serverName);
     const config = connection?.server.config;
     if (config) {
-      logger.info(`Restarting ${serverName} MCP server...`);
+      logger.info(`Restarting ${serverName} Sapience server...`);
       connection.server.status = "connecting";
       connection.server.error = "";
       try {
         await this.deleteConnection(serverName);
         await this.initializeConnection(serverName, JSON.parse(config));
-        logger.info(`${serverName} MCP server connected`);
+        logger.info(`${serverName} Sapience server connected`);
       } catch (error) {
         logger.error(
           `Failed to restart connection for ${serverName}:`,
           error instanceof Error ? error.message : String(error)
         );
-        throw new Error(`Failed to connect to ${serverName} MCP server`);
+        throw new Error(`Failed to connect to ${serverName} Sapience server`);
       }
     }
   }
