@@ -8,11 +8,11 @@ import {
 } from "@elizaos/core";
 import type { State } from "@elizaos/core";
 import { errorAnalysisPrompt } from "../templates/errorAnalysisPrompt";
-import type { McpProvider } from "../types";
+import type { SapienceProvider } from "../types";
 
 export async function handleMcpError(
   state: State,
-  mcpProvider: McpProvider,
+  mcpProvider: SapienceProvider,
   error: unknown,
   runtime: IAgentRuntime,
   message: Memory,
