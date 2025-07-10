@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/elizaos-plugins/plugin-sapience.git"
+    "url": "git+https://github.com/sapiencexyz/plugin-sapience.git"
   },
   "publishConfig": {
     "access": "public"
@@ -64,6 +64,12 @@
         "description": "Serialized (e.g., JSON) configuration that defines MCP settings and server definitions; read at runtime to establish MCP server connections.",
         "required": false,
         "sensitive": false
+      },
+      "PRIVATE_KEY": {
+        "type": "string",
+        "description": "Private key for simulating and submitting blockchain transactions.",
+        "required": false,
+        "sensitive": true
       }
     }
   }
