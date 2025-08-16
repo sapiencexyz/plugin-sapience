@@ -60,6 +60,11 @@ export class SapienceService extends Service {
     this.initializeSapienceServers();
   }
 
+  async initialize(runtime: IAgentRuntime): Promise<void> {
+    this.runtime = runtime;
+    await this.initializeSapienceServers();
+  }
+
   static async start(runtime: IAgentRuntime): Promise<SapienceService> {
     const service = new SapienceService(runtime);
     return service;
