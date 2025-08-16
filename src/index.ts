@@ -22,7 +22,8 @@ const sapiencePlugin: Plugin = {
     submitTransactionAction,
   ],
   providers: [provider],
-  dependencies: ['@elizaos/plugin-sql'],
+  dependencies: ['@elizaos/plugin-bootstrap'],
+  priority: 100,
 };
 
 export type { SapienceService };
