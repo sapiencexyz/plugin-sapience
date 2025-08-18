@@ -7,7 +7,7 @@ import {
   logger,
 } from "@elizaos/core";
 import { createWalletClient, http, type Hash } from "viem";
-import { base } from "viem/chains";
+import { base, arbitrum } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
 export const submitTransactionAction: Action = {
@@ -218,14 +218,26 @@ export const submitTransactionAction: Action = {
       // Create account from private key
       const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
 
+      // Determine which chain to use (default to base)
+      const chainName = runtime.getSetting("CHAIN") || process.env.CHAIN || "base";
+      const chain = chainName.toLowerCase() === "arbitrum" ? arbitrum : base;
+      
+      // Get RPC URL based on chain
+      let rpcUrl = runtime.getSetting("RPC_URL") || process.env.RPC_URL;
+      if (!rpcUrl) {
+        rpcUrl = chain === arbitrum 
+          ? "https://arb1.arbitrum.io/rpc" 
+          : "https://mainnet.base.org";
+      }
+
       // Create wallet client
       const walletClient = createWalletClient({
         account,
-        chain: base,
-        transport: http(process.env.RPC_URL || "https://mainnet.base.org"),
+        chain,
+        transport: http(rpcUrl),
       });
 
-      logger.info(`Submitting transaction to ${transactionData.to} from ${account.address}`);
+      logger.info(`Submitting transaction on ${chain.name} to ${transactionData.to} from ${account.address}`);
 
       // Submit transaction (viem handles gas estimation automatically)
       const hash = await walletClient.sendTransaction({
@@ -234,12 +246,16 @@ export const submitTransactionAction: Action = {
         value: transactionData.value ? BigInt(transactionData.value) : 0n,
       });
 
-      logger.info(`Transaction submitted with hash: ${hash}`);
+      logger.info(`Transaction submitted on ${chain.name} with hash: ${hash}`);
 
       // Send response via callback
       if (callback) {
+        const explorerUrl = chain === arbitrum 
+          ? `https://arbiscan.io/tx/${hash}`
+          : `https://basescan.org/tx/${hash}`;
+        
         callback({
-          text: `Transaction submitted successfully! ✅\n\n**Transaction Hash:** ${hash}\n**To:** ${transactionData.to}\n**From:** ${account.address}\n**Value:** ${transactionData.value || "0"} wei\n\nYou can view the transaction on the block explorer: https://basescan.org/tx/${hash}`,
+          text: `Transaction submitted successfully! ✅\n\n**Chain:** ${chain.name}\n**Transaction Hash:** ${hash}\n**To:** ${transactionData.to}\n**From:** ${account.address}\n**Value:** ${transactionData.value || "0"} wei\n\nYou can view the transaction on the block explorer: ${explorerUrl}`,
         });
       }
 
